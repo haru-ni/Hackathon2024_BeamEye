@@ -97,7 +97,6 @@ public class Player : HitableObject
                 }
             });
         }
-        
     }
 
     void Update()
@@ -111,6 +110,11 @@ public class Player : HitableObject
         JumpProccess();
         UpdateTensionGuageUI();
         // TODO  kokode ovr camerawotuijuusuru 
+        
+        Vector3 pos = _ovrCamera.transform.localPosition;
+        pos.y -= 1.8f;
+        transform.localPosition = pos;
+        transform.localEulerAngles = new Vector3(0, _ovrCamera.transform.localEulerAngles.y, 0);
     }
 
     void FixedUpdate()

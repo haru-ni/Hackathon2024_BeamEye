@@ -5,7 +5,7 @@ using UnityEngine;
 public class CameraRotator : MonoBehaviour
 {
     // カメラオブジェクトを格納する変数
-    public Camera mainCamera;
+    public Camera mainCamera = null;
     // カメラの回転速度を格納する変数
     public Vector2 rotationSpeed;
     // マウス移動方向とカメラ回転方向を反転する判定フラグ
@@ -22,8 +22,10 @@ public class CameraRotator : MonoBehaviour
     // ゲーム実行中の繰り返し処理
     void Update()
     {
+        if(mainCamera == null)
+            return;
         // 左クリックした時
-        if (Input.GetMouseButtonDown(0))
+        if (Input.GetMouseButtonDown(0) )
         {
             // カメラの角度を変数"newAngle"に格納
             newAngle = mainCamera.transform.localEulerAngles;
