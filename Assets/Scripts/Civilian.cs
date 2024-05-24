@@ -61,19 +61,20 @@ public class Civilian : HitableObject
         }
     }
 
-    private void OnCollisionStay(Collision col)
+    //private void OnTriggerStay(Collision col)
+    private void OnTriggerEnter(Collider col)
     {
-        if(col.gameObject.tag == "mono" || col.gameObject.tag == "Player"  )
+        if(col.gameObject.tag != null)
         {
             if(_ramdam <= 2)
             {
                 //transform.Rotate(new Vector3(0,90,0)); 
-                transform.rotation = Quaternion.Euler(0,transform.localEulerAngles.y + 90,0);
+                transform.rotation = Quaternion.Euler(0,transform.localEulerAngles.y + 120,0);
             }
             else
             {
                 //transform.Rotate(new Vector3(0,-90,0)); 
-                transform.rotation = Quaternion.Euler(0,transform.localEulerAngles.y - 90,0);
+                transform.rotation = Quaternion.Euler(0,transform.localEulerAngles.y - 120,0);
             }
         }
         
