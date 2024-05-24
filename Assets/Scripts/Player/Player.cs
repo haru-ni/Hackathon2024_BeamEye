@@ -82,7 +82,6 @@ public class Player : HitableObject
                 }
                 if(hitableObject != null)
                     hitableObject.AttackHit(BEAM_POWER);
-                Debug.Log("攻撃対象：" + gameObject.gameObject.name);
 
                 // 市民を攻撃してしまった
                 if(gameObject.layer == LayerMask.NameToLayer("Citizen"))
@@ -93,7 +92,7 @@ public class Player : HitableObject
                 // 敵を攻撃したら回復
                 if(gameObject.layer == LayerMask.NameToLayer("Enemy"))
                 {
-                    _currentHP += _maxHP * 0.2f;
+                    _currentHP += _maxHP * 0.1f;
                 }
             });
         }
