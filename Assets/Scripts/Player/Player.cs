@@ -8,7 +8,7 @@ public class Player : HitableObject
 {
     // ---------- 定数宣言 ----------
     private const float INIT_HP = 100f;
-    private const float BEAM_POWER = 1.5f;
+    private const float BEAM_POWER = 1.5f; 
     // private const float BEAM_POWER = 0f;
 
     private const float DEFAULT_SPEED = 3.0f;
@@ -23,6 +23,7 @@ public class Player : HitableObject
     // ---------- プレハブ ----------
     // ---------- プロパティ ----------
     [SerializeField, Tooltip("Rigidbody")] private Rigidbody _rigidbody;
+    [SerializeField, Tooltip("OVRCamera")] private OVRCameraRig _ovrCamera; 
     [SerializeField, Tooltip("mainCamera")] private Camera _mainCamera;
     [SerializeField, Tooltip("StepUpHighTrigger")] private ChildTrigger _stepUpHighTrigger = default;
     [SerializeField, Tooltip("StepUpLowTrigger")] private ChildTrigger _stepUpLowTrigger = default;
@@ -109,6 +110,7 @@ public class Player : HitableObject
         MoveProccess();
         JumpProccess();
         UpdateTensionGuageUI();
+        // TODO  kokode ovr camerawotuijuusuru 
     }
 
     void FixedUpdate()
