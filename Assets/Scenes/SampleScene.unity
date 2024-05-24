@@ -191,7 +191,8 @@ PrefabInstance:
       propertyPath: _civilianPrefab
       value: 
       objectReference: {fileID: 4804071595876965556, guid: ebece037962784e56b645605ad7bd918, type: 3}
-    m_RemovedComponents: []
+    m_RemovedComponents:
+    - {fileID: 7511427429883720933, guid: cf2c83b7d9173734789bb12d3565f234, type: 3}
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
     m_AddedComponents: []

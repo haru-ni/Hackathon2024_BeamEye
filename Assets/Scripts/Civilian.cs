@@ -11,7 +11,7 @@ public class Civilian : HitableObject
 
     private float _rool_speed = 1f;  //旋回性能
 
-    private float _ramdam = 3;
+    private float _ramdom = 3;
 
     // Start is called before the first frame update
     void Start()
@@ -51,13 +51,13 @@ public class Civilian : HitableObject
         _rigidbody.velocity = transform.TransformDirection(_vec33);
 
 
-        if(_ramdam <= 0)
+        if(_ramdom <= 0)
         {
-            _ramdam = 3f;
+            _ramdom = 3f;
         }
         else
         {
-            _ramdam -= 1f;
+            _ramdom -= 1f;
         }
     }
 
@@ -66,7 +66,7 @@ public class Civilian : HitableObject
     {
         if(col.gameObject.tag != null)
         {
-            if(_ramdam <= 2)
+            if(_ramdom <= 2)
             {
                 //transform.Rotate(new Vector3(0,90,0)); 
                 transform.rotation = Quaternion.Euler(0,transform.localEulerAngles.y + 120,0);
