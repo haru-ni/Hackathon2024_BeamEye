@@ -4,12 +4,19 @@ using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 
-public class Player : MonoBehaviour
+public class Player : HitableObject
 {
     // ---------- 定数宣言 ----------
+    private const float INIT_HP = 100f;
+    private const float BEAM_POWER = 1.5f;
     private const float DEFAULT_SPEED = 3.0f;
     private const float DASH_SPEED = 12.0f;
     private const float JUMP_SPEED = 6.0f;
+    private const float SELF_HEAL = 0.1f;
+    private const float DASH_COST = 0.1f;
+    private const float JUMP_COST = 0.5f;
+    private const float FIRST_DASH_COST = 5.0f;
+    private const float FIRST_JUMP_COST = 5.0f;
     // ---------- ゲームオブジェクト参照変数宣言 ----------
     // ---------- プレハブ ----------
     // ---------- プロパティ ----------
@@ -17,24 +24,77 @@ public class Player : MonoBehaviour
     [SerializeField, Tooltip("mainCamera")] private Camera _mainCamera;
     [SerializeField, Tooltip("StepUpHighTrigger")] private ChildTrigger _stepUpHighTrigger = default;
     [SerializeField, Tooltip("StepUpLowTrigger")] private ChildTrigger _stepUpLowTrigger = default;
+    [SerializeField] private GameObject _rest_tension_gauge ;   //残りテンション
+    [SerializeField] private GameObject _grace_tension_gauge ;   //テンションが減った時、一瞬だけ見える部分
+
+    [SerializeField, Tooltip("Beam")] private List<ChildTrigger> _beamAttackTriggerList = default;
     private bool _isSteping = false;   // 段差判定
     private bool _isGrounding = false;   // 着地判定
     private bool _isDash = false;   // ダッシュ判定
     private bool _isJump = false;   // ジャンプ判定
     private int _dashEndTimer = 0;   // ダッシュ終了タイマー
+    private int _dashTimer = 0;   // ダッシュタイマー
+    private float _graceHp = 100f;     //テンションが減った時、一瞬だけ見える部分の内部数値
+    private float _graceHpCounter = 100f;    //攻撃を喰らった後、一瞬だけ見える部分が減り始めるまでの時間
+    private Vector3 _lastDashVec = Vector3.zero;
+    private int _stopAutoHealTimer = 0; 
 
-    private bool _isStepUpHighTrigger = false;
-    private bool _isStepUpLowTrigger = false;
-    private Vector3 lastDashVec = Vector3.zero;
+    private GameObject _lastHitObject = null;
+    private HitableObject _lastHitHitableObject = null;
     // ---------- クラス変数宣言 ----------
     // ---------- インスタンス変数宣言 ----------
     // ---------- Unity組込関数 ----------
     void Start()
     {
-        int layerMask = LayerMaskExtensions.Add(0, "Default");
-        _stepUpHighTrigger.SetLayerMask(layerMask);
-        _stepUpLowTrigger.SetLayerMask(layerMask);
-        lastDashVec = _mainCamera.transform.forward;
+        Initialize(INIT_HP);
+        int stepLayerMask = LayerMaskExtensions.Add(0, "Default");
+        _stepUpHighTrigger.SetLayerMask(stepLayerMask);
+        _stepUpLowTrigger.SetLayerMask(stepLayerMask);
+        _lastDashVec = _mainCamera.transform.forward;
+
+        int beamLayerMask = LayerMaskExtensions.Add(0, "Default");
+        beamLayerMask = LayerMaskExtensions.Add(beamLayerMask, "Enemy");
+        beamLayerMask = LayerMaskExtensions.Add(beamLayerMask, "Citizen");
+        for(int i = 0; i < _beamAttackTriggerList.Count; i++)
+        {
+            ChildTrigger beamCollision = _beamAttackTriggerList[i];
+            Debug.Log("ビーム初期化");
+            beamCollision.SetLayerMask(beamLayerMask);
+            beamCollision.SetOnParticleCollisionCallback(gameObject=>
+            {
+                // ビームが当たった対象のhitableObject取得
+                HitableObject hitableObject = null;
+                if(gameObject == _lastHitObject)
+                {
+                    hitableObject = _lastHitHitableObject;
+                }
+                else
+                {
+                    hitableObject = gameObject.gameObject.GetComponent<HitableObject>();
+                    if(hitableObject != null)
+                    {
+                        _lastHitObject = gameObject;
+                        _lastHitHitableObject = hitableObject;
+                    }
+                }
+                if(hitableObject != null)
+                    hitableObject.AttackHit(BEAM_POWER);
+                Debug.Log("攻撃対象：" + gameObject.gameObject.name);
+
+                // 市民を攻撃してしまった
+                if(gameObject.gameObject.layer == LayerMask.NameToLayer("Citizen"))
+                {
+                    Damage(20.0f);
+                    UpdateStopAutoHealTimer(300);
+                }
+                // 敵を攻撃したら回復
+                if(gameObject.gameObject.layer == LayerMask.NameToLayer("Enemy"))
+                {
+                    _currentHP += _maxHP * 0.2f;
+                }
+            });
+        }
+        
     }
 
     void Update()
@@ -46,8 +106,22 @@ public class Player : MonoBehaviour
         DashProccess();
         MoveProccess();
         JumpProccess();
+        UpdateTensionGuageUI();
+    }
+
+    void FixedUpdate()
+    {
+        if(_stopAutoHealTimer <= 0)
+        {
+            // if(_isGrounding)
+                _currentHP += SELF_HEAL;
+        }
+        else
+            _stopAutoHealTimer--;
     }
     // ---------- Public関数 ----------
+    public Rigidbody GetRigidBody(){ return _rigidbody; }
+    public void UpdateStopAutoHealTimer(int timer) { if(_stopAutoHealTimer <= timer ) _stopAutoHealTimer = timer; }
     // ---------- Private関数 ----------
     private void CheckGrounding()
     {
@@ -68,6 +142,8 @@ public class Player : MonoBehaviour
         {
             _isDash = true;
             _rigidbody.useGravity = false;
+            // 自傷
+            Damage(FIRST_DASH_COST);
 
             // よじ登り状態でなければ上昇速度を変更
             if(!_isSteping)
@@ -80,6 +156,7 @@ public class Player : MonoBehaviour
                 _rigidbody.velocity = newVelocity;
             }
             _dashEndTimer = 0;
+            _dashTimer = 0;
         }
 
         if (Input.GetMouseButton(0))
@@ -89,6 +166,11 @@ public class Player : MonoBehaviour
             if(newVelocity.y <= 0.05f)
                 newVelocity.y = 0;
             _rigidbody.velocity = newVelocity;
+            // 自傷
+            Damage(DASH_COST);
+
+            _dashTimer++;
+            UpdateStopAutoHealTimer(30);
         }
         else
         {
@@ -153,12 +235,12 @@ public class Player : MonoBehaviour
                 newVelocity.x = velocityFB.x + velocityLR.x;
                 newVelocity.z = velocityFB.z + velocityLR.z;
                 if(_isDash)
-                    lastDashVec = newVelocity;
+                    _lastDashVec = newVelocity;
             }
             // ダッシュ中、方向キーを入力してないなら最後に指定した角度に走る
             else
             {
-                newVelocity = lastDashVec;
+                newVelocity = _lastDashVec;
             }
             newVelocity = NormalizedEx(newVelocity) * speed;
             
@@ -177,7 +259,6 @@ public class Player : MonoBehaviour
                 // 現在速度が高いほど影響度が高い
                 float col2 = HorizontalVec(_rigidbody.velocity).magnitude / maxSpd;
                 col = 1 - col * col2;
-                Debug.Log("col:"+col);
                 _rigidbody.AddForce( newVelocity * 1.2f * col, ForceMode.Force);
             }
         }
@@ -192,13 +273,21 @@ public class Player : MonoBehaviour
             if(velocity.z <= 0.01f)
                 velocity.z = 0f;
             _rigidbody.velocity = velocity;
-            lastDashVec = _mainCamera.transform.forward;
+            _lastDashVec = _mainCamera.transform.forward;
         }
     }
 
     private void JumpProccess()
     {
         Vector3 newVelocity = Vector3.zero;
+
+
+        // 右クリック（上昇）
+        if (Input.GetMouseButtonDown(1) && !_isDash)
+        {
+            Damage(FIRST_JUMP_COST); 
+        }
+
         // 右クリック（上昇）
         if (Input.GetMouseButton(1) && !_isDash)
         {
@@ -206,6 +295,8 @@ public class Player : MonoBehaviour
             newVelocity.y = 1.0f * JUMP_SPEED;
             _rigidbody.velocity = newVelocity;
             _isJump = true;
+            Damage(JUMP_COST);
+            UpdateStopAutoHealTimer(30);
         }
         else
             _isJump = false;
@@ -289,6 +380,29 @@ public class Player : MonoBehaviour
     private Vector3 HorizontalNormalizedEx(Vector3 vec)
     {
         return NormalizedEx(HorizontalVec(vec));
+    }
+
+    private void UpdateTensionGuageUI()
+    {
+        //テンションの現在値と最大値の割り合いを、ゲージの大きさに反映させる
+        _rest_tension_gauge.transform.localScale = new Vector3(_currentHP / _maxHP ,1 ,1);
+
+        //テンションが最大値以上なら最大値にする
+        if(_currentHP > _maxHP )
+        {
+            _currentHP = _maxHP;
+        }
+
+        //一瞬だけ見える部分の処理
+        if(_currentHP < _graceHp)
+        {
+            _graceHp = _graceHp - 0.25f ;
+            _grace_tension_gauge.transform.localScale = new Vector3(_graceHp / _maxHP ,1 ,1);
+        }
+        else
+        {
+            _graceHp = _currentHP;
+        }
     }
 }
 

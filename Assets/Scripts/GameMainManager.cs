@@ -4,15 +4,33 @@ using UnityEngine;
 
 public class GameMainManager : MonoBehaviour
 {
-    // Start is called before the first frame update
-    void Start()
+    // ---------- 定数宣言 ----------
+    // ---------- ゲームオブジェクト参照変数宣言 ----------
+    // ---------- プレハブ ----------
+    // ---------- プロパティ ----------
+    [SerializeField, Tooltip("Rigidbody")] private Player _player;
+    [SerializeField, Tooltip("HumanSpawner")] private HumanSpawner _humanSpawner;
+    [SerializeField, Tooltip("EnemySpawner")] private EnemySpawner _enemySpawner;
+    // ---------- クラス変数宣言 ----------
+    // ---------- インスタンス変数宣言 ----------
+    // ---------- Unity組込関数 ----------
+    void Awake()
     {
+        PlayData.Initialize();
+        PlayData.player = _player;
         Application.targetFrameRate = 60;
     }
+    void Start()
+    {
+        _humanSpawner.Initialize();
+        _enemySpawner.Initialize();
+    }
 
-    // Update is called once per frame
     void Update()
     {
         
     }
+    // ---------- Public関数 ----------
+    // ---------- Private関数 ----------
+
 }
