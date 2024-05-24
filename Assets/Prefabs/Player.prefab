@@ -234,6 +234,7 @@ MonoBehaviour:
   _mainCamera: {fileID: 0}
   _stepUpHighTrigger: {fileID: 5121090681183880154}
   _stepUpLowTrigger: {fileID: 7736843562154205793}
+  _beam_object: {fileID: 3609466768409882728}
   _rest_tension_gauge: {fileID: 0}
   _grace_tension_gauge: {fileID: 0}
   _beamAttackTriggerList:
@@ -368,6 +369,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f8b8db40996e6274b8b099e798ceab2b, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+--- !u!1 &3609466768409882728 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 5673236711500353107, guid: 9a3b394fa90444cc5956b8bc18ed0e99, type: 3}
+  m_PrefabInstance: {fileID: 8983560157599039035}
+  m_PrefabAsset: {fileID: 0}
 --- !u!4 &5983843450165005373 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 3433684343458427398, guid: 9a3b394fa90444cc5956b8bc18ed0e99, type: 3}

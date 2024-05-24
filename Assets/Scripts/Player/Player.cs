@@ -27,6 +27,7 @@ public class Player : HitableObject
     [SerializeField, Tooltip("mainCamera")] private Camera _mainCamera;
     [SerializeField, Tooltip("StepUpHighTrigger")] private ChildTrigger _stepUpHighTrigger = default;
     [SerializeField, Tooltip("StepUpLowTrigger")] private ChildTrigger _stepUpLowTrigger = default;
+    [SerializeField, Tooltip("BeamGroup")] private GameObject _beam_object = default;
     [SerializeField] private GameObject _rest_tension_gauge ;   //残りテンション
     [SerializeField] private GameObject _grace_tension_gauge ;   //テンションが減った時、一瞬だけ見える部分
 
@@ -107,13 +108,7 @@ public class Player : HitableObject
         DashProccess();
         MoveProccess();
         JumpProccess();
-        UpdateTensionGuageUI();
-        // TODO  kokode ovr camerawotuijuusuru 
-        
-        Vector3 pos = _ovrCamera.transform.localPosition;
-        pos.y -= 1.8f;
-        transform.localPosition = pos;
-        transform.localEulerAngles = new Vector3(0, _ovrCamera.transform.localEulerAngles.y, 0);
+        UpdateTensionGuageUI(); 
     }
 
     void FixedUpdate()
