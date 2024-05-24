@@ -7,25 +7,31 @@ using UnityEngine.SceneManagement;
 public class Enemy : HitableObject
 {
     //定数宣言
-    private const int HIT_START_TIME = 60;
-    private const int HIT_END_TIME = 80;
-    private float _move_speed = 1f;     //移動速度
-    private float _rool_speed = 0.05f;  //旋回性能
-    private float _attack_end_time = 180f;     //大体の攻撃時間
-    private float _attack_power = 30f;     //攻撃力
     private float _destroy_time = 100f;     //消失までの時間
     //変数宣言
-    private float _attack_counter = 0f;    //攻撃時間の計測
+    private int _attack_counter = 0;    //攻撃時間の計測
     private float _destroy_counter = 0f;     //消失までの時間
+    private float _attackSpeed = 0f;
     //プロパティ宣言
-    private Rigidbody RBODY;          //コイツのRigidbody
-    private Animator _animator;      //アニメーターの取得
+    // private Animator _animator;      //アニメーターの取得
     private bool _isAttackHit = false;
     [SerializeField, Tooltip("初期HP")] private int _initHp = 100;
+    [SerializeField, Tooltip("移動速度")] private float _move_speed = 1f;
+    [SerializeField, Tooltip("旋回性能")] private float _roll_speed = 0.05f;
+    [SerializeField, Tooltip("攻撃力")] private float _attack_power = 30f;
+    [SerializeField, Tooltip("大体の攻撃時間")] private int _attack_end_time = 180; 
+    [SerializeField, Tooltip("攻撃開始時間")] private int _hitStartTime = 60;
+    [SerializeField, Tooltip("攻撃終了時間")] private int _hitEndTime = 80;
     [SerializeField, Tooltip("コントローラー")] private List<Enemy_blade> _hitBoxList;
-    [SerializeField] private GameObject _currentHP_gauge ;   //残りHP    
-
-
+    [SerializeField] private GameObject _currentHP_gauge ;   //残りHP   
+    [SerializeField, Tooltip("ニメーター")] private Animator _animator = default; 
+    [SerializeField, Tooltip("")] private Transform _child = null;
+    [SerializeField, Tooltip("")] private Rigidbody _rigidBody = null;
+    [SerializeField, Tooltip("")] private int _attackChargeStartTIme = 0;
+    [SerializeField, Tooltip("")] private float _attackInitSpeed = 0f;
+    [SerializeField, Tooltip("")] private float _attackAcc = 0f;
+    [SerializeField, Tooltip("")] private List<GameObject> _attackTrailList = default;
+    [SerializeField, Tooltip("")] private float _initPosY = 0f;
     // //LookAtを使いたいなら必要
     // [SerializeField] private Transform _self;
     // [SerializeField] private Transform _target;
@@ -34,11 +40,11 @@ public class Enemy : HitableObject
 
 
     // Start is called before the first frame update
-    void Start()
+    private void Start()
     {
         Initialize(_initHp);
-        RBODY = GetComponent<Rigidbody>();          //汎用
-        _animator = GetComponent<Animator>();       //アニメーターの取得
+        // _rigidBody = GetComponent<Rigidbody>();          //汎用
+        // _animator = GetComponent<Animator>();       //アニメーターの取得
         _destroy_counter = _destroy_time; //カウンターの初期化
 
         for(int i = 0; i < _hitBoxList.Count; i++)
@@ -64,7 +70,7 @@ public class Enemy : HitableObject
         
         //攻撃中でなく、索敵範囲にプレイヤーがいるなら
         //if(_attack_counter == 0f && col.gameObject.tag == "Player" )
-        if(_attack_counter == 0f )
+        if(_attack_counter == 0 )
         {
             //プレイヤーと自分の位置の差を、方向に変換
             Vector3 relativePos = PlayData.player.transform.position - this.transform.position;
@@ -73,24 +79,27 @@ public class Enemy : HitableObject
             //方向を、回転情報に変換
             Quaternion _rotasion = Quaternion.LookRotation(relativePos);
             //今向いている方向から、向きたい方向に、時間をかけて振り向く
-            transform.rotation = Quaternion.Slerp(this.transform.rotation,_rotasion,_rool_speed);
+            transform.rotation = Quaternion.Slerp(this.transform.rotation,_rotasion,_roll_speed);
 
             ////一瞬で振り向く
             //_self.LookAt(_target);
 
             //前に移動し続ける
-            RBODY.AddForce(transform.forward * _move_speed,ForceMode.VelocityChange);
+            // _rigidBody.AddForce(transform.forward * _move_speed,ForceMode.VelocityChange);
 
-            _attack_counter = 0f;
+            _rigidBody.velocity = transform.forward * _move_speed;
+
+            _attack_counter = 0;
             _animator.SetBool("Attack",false);
+            AttackEnd();
         }
         //攻撃中なら
         else
         {
             //攻撃時間カウンターを増やす
-            _attack_counter += 1f;
+            _attack_counter += 1;
             //Debug.Log(_attack_counter);
-            if(HIT_START_TIME <= _attack_counter && _attack_counter <= HIT_END_TIME && !_isAttackHit )
+            if(_hitStartTime <= _attack_counter && _attack_counter <= _hitEndTime && !_isAttackHit )
             {
                 for(int i = 0; i < _hitBoxList.Count; i++)
                 {
@@ -106,6 +115,24 @@ public class Enemy : HitableObject
                     _hitBoxList[i].BoxColliderEnabled(false);
                 }
             }
+            _rigidBody.angularVelocity = Vector3.zero;
+
+            // 攻撃時突進
+            if( _attackChargeStartTIme <= _attack_counter )
+            {
+                if(_attack_counter == _attackChargeStartTIme)
+                    _attackSpeed = _attackInitSpeed;
+                
+                // 初速と同じ向きに少しでも突進するなら突進する力を加える
+                if( 0 < _attackSpeed * _attackInitSpeed )
+                    _rigidBody.velocity = transform.forward * _attackSpeed;
+                else
+                    _rigidBody.velocity = Vector3.zero;
+
+                _attackSpeed += _attackAcc;
+            }
+            else
+                _rigidBody.velocity = Vector3.zero;
         }
 
         //攻撃してから時間がたったら
@@ -113,30 +140,32 @@ public class Enemy : HitableObject
         {
             _attack_counter = 0;
             _isAttackHit = false;
-            RBODY.angularVelocity = Vector3.zero;
+            _rigidBody.angularVelocity = Vector3.zero;
+            AttackEnd();
         }
     }
+
+    public float GetInitPosY(){ return _initPosY; }
 
     //トリガーにあたった処理
     private void OnTriggerStay(Collider col)
     {
         //トリガーに当たっており、攻撃中でないなら
-        if(col.gameObject.tag == "Player" && _attack_counter == 0f)
+        if(col.gameObject.tag == "Player" && _attack_counter == 0)
         //if(_attack_counter == 0f)
         {
             //攻撃アニメーションをさせる
             _animator.SetBool("Attack",true);
             //カウンターが１～180の間はカウント
             _attack_counter += 1;
-            //Debug.Log("当たってて草");
+            for(int i = 0; i < _attackTrailList.Count; i++ )
+                _attackTrailList[i].SetActive(true);
         }
 
         //攻撃してから時間がたったら
         if(_attack_counter > _attack_end_time)
         {
-            _attack_counter = 0;
-            _isAttackHit = false; 
-            RBODY.angularVelocity = Vector3.zero;
+            AttackEnd();
         }
     }
 
@@ -192,8 +221,8 @@ public class Enemy : HitableObject
             // //今向いている方向から、向きたい方向に、時間をかけて振り向く
             // transform.rotation = Quaternion.Slerp(this.transform.rotation,_rotasion,1);
             //後ろにぶっ飛ぶ
-            //RBODY.AddForce(transform.forward * -100,ForceMode.VelocityChange),ForceMode.Acceleration;
-            RBODY.AddForce(new Vector3( 0 , 20f, -300f),ForceMode.VelocityChange);
+            //_rigidBody.AddForce(transform.forward * -100,ForceMode.VelocityChange),ForceMode.Acceleration;
+            _rigidBody.AddForce(new Vector3( 0 , 20f, -300f),ForceMode.VelocityChange);
         }
 
         //消失の処理
@@ -202,5 +231,20 @@ public class Enemy : HitableObject
             Destroy(this.gameObject);
             // PlayData.player._enemy_destory_count();
         }
+    }
+
+    public void AttackEnd()
+    {
+        for(int i = 0; i < _attackTrailList.Count; i++ )
+            _attackTrailList[i].SetActive(false);
+        if(_child != null)
+        {
+            _child.localPosition = Vector3.zero;
+            _child.localEulerAngles = Vector3.zero;
+        }
+
+        _attack_counter = 0;
+        _isAttackHit = false; 
+        _rigidBody.angularVelocity = Vector3.zero;
     }
 }

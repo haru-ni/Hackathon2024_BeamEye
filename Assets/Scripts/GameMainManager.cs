@@ -10,7 +10,7 @@ public class GameMainManager : MonoBehaviour
     // ---------- プロパティ ----------
     [SerializeField, Tooltip("Rigidbody")] private Player _player;
     [SerializeField, Tooltip("HumanSpawner")] private HumanSpawner _humanSpawner;
-    [SerializeField, Tooltip("EnemySpawner")] private EnemySpawner _enemySpawner;
+    [SerializeField, Tooltip("EnemySpawner")] private List<EnemySpawner> _enemySpawnerList;
     // ---------- クラス変数宣言 ----------
     // ---------- インスタンス変数宣言 ----------
     // ---------- Unity組込関数 ----------
@@ -23,7 +23,10 @@ public class GameMainManager : MonoBehaviour
     void Start()
     {
         _humanSpawner.Initialize();
-        _enemySpawner.Initialize();
+        for(int i = 0; i < _enemySpawnerList.Count; i++)
+        {
+            _enemySpawnerList[i].Initialize();
+        }
     }
 
     void Update()

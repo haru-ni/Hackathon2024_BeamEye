@@ -5,21 +5,28 @@ using UnityEngine;
 public class EnemySpawner : MonoBehaviour
 {
     // ---------- 定数宣言 ----------
-    private const int MAX_ENEMY_NUM = 150;
-    private const int INIT_ENEMY_NUM = 50;
     // ---------- ゲームオブジェクト参照変数宣言 ----------
     // ---------- プレハブ ----------
     // ---------- プロパティ ----------
+    [SerializeField, Tooltip("Parent")] private int _maxEnemyNum = 150;
+    [SerializeField, Tooltip("Parent")] private int _InitEnemyNum = 50;
+    [SerializeField, Tooltip("同時スポーン数")] private int _spawn_num = 3;
+    [SerializeField, Tooltip("Parent")] private int _minSpawnTime = 10;
+    [SerializeField, Tooltip("Parent")] private int _maxSpawnTime = 60;    
     [SerializeField, Tooltip("Parent")] private Transform _parent;
     [SerializeField, Tooltip("プレハブ")] private Enemy _enemyPrefab;
     private List<Enemy> _enemyList = default;
     // ---------- クラス変数宣言 ----------
     // ---------- インスタンス変数宣言 ----------
     private int _respornTimer = 0;
+    private bool _isInitialize = false;
     // ---------- Unity組込関数 ----------
     public void FixedUpdate()
     {
-        if(_respornTimer <= 0 && _enemyList.Count < MAX_ENEMY_NUM)
+        if(!_isInitialize)
+            Initialize();
+
+        if(_respornTimer <= 0 && _enemyList.Count < _maxEnemyNum)
         {
             EnemyRespawn();
             ResetRespawnTimer();
@@ -30,30 +37,41 @@ public class EnemySpawner : MonoBehaviour
     public void Initialize()
     {
         _enemyList = new List<Enemy>();
-        for(int i = 0; i < INIT_ENEMY_NUM; i++)
+        for(int i = 0; i < _InitEnemyNum; i++)
         {
             EnemyRespawn();
         }
+        _isInitialize = true;
     }
     // ---------- Private関数 ----------
     private void EnemyRespawn()
     {
-        Enemy enemy = Instantiate(_enemyPrefab);
         float posX = Random.Range(-90f, 150f);
         float posZ = Random.Range(20f, 260f);
-        Vector3 setPos = new Vector3(posX, 0, posZ);
-        
-        Vector3 addPos = setPos - PlayData.player.transform.localPosition;
-        addPos = addPos.normalized * 30f;
-        setPos += addPos;
-        enemy.transform.localPosition = setPos;
 
-
-        enemy.AddOnDieCallback(()=>
+        for(int i = 0; i < _spawn_num; i++)
         {
-            _enemyList.Remove(enemy);
-        });
-        _enemyList.Add(enemy);
+            Enemy enemy = Instantiate(_enemyPrefab);
+
+            float addX = Random.Range(-3f, 3f);
+            float addZ = Random.Range(-3f, 3f);
+
+            Vector3 setPos = new Vector3(posX + addX, enemy.GetInitPosY(), posZ + addZ);
+        
+            Vector3 addPos = setPos - PlayData.player.transform.localPosition;
+            addPos = addPos.normalized * 30f;
+            setPos += addPos;
+            enemy.transform.localPosition = setPos;
+
+            enemy.transform.parent = _parent;
+
+
+            enemy.AddOnDieCallback(()=>
+            {
+                _enemyList.Remove(enemy);
+            });
+            _enemyList.Add(enemy);
+        }
     }
     private void ResetRespawnTimer()
     {

@@ -9,6 +9,8 @@ public class Player : HitableObject
     // ---------- 定数宣言 ----------
     private const float INIT_HP = 100f;
     private const float BEAM_POWER = 1.5f;
+    // private const float BEAM_POWER = 0f;
+
     private const float DEFAULT_SPEED = 3.0f;
     private const float DASH_SPEED = 12.0f;
     private const float JUMP_SPEED = 6.0f;
@@ -82,13 +84,13 @@ public class Player : HitableObject
                 Debug.Log("攻撃対象：" + gameObject.gameObject.name);
 
                 // 市民を攻撃してしまった
-                if(gameObject.gameObject.layer == LayerMask.NameToLayer("Citizen"))
+                if(gameObject.layer == LayerMask.NameToLayer("Citizen"))
                 {
                     Damage(20.0f);
                     UpdateStopAutoHealTimer(300);
                 }
                 // 敵を攻撃したら回復
-                if(gameObject.gameObject.layer == LayerMask.NameToLayer("Enemy"))
+                if(gameObject.layer == LayerMask.NameToLayer("Enemy"))
                 {
                     _currentHP += _maxHP * 0.2f;
                 }

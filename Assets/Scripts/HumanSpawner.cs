@@ -30,6 +30,8 @@ public class HumanSpawner : MonoBehaviour
             addPos = addPos.normalized * 30f;
             setPos += addPos;
             human.transform.localPosition = setPos;
+
+            human.transform.parent = _parent;
         }
     }
     // ---------- Private関数 ----------
